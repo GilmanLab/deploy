@@ -1,0 +1,66 @@
+resources:
+  datacenter: Gilman
+  clusters:
+    - Lab
+  hosts:
+    - esxi0.gilman.io
+    - esxi1.gilman.io
+    - esxi2.gilman.io
+    - esxi3.gilman.io
+    - esxi4.gilman.io
+  networks:
+    - Dev
+    - Management
+    - Media
+    - Orchestration
+    - Prod
+    - Storage
+    - Wifi
+  datastores:
+    - Containers
+    - ISO
+    - Lab
+    - Local
+    - Logs
+    - Optane
+    - vsan
+  templates:
+    - kube
+    - ubuntu18044
+env:
+  prod:
+    subnet: 192.168.1.0/24
+    network: Prod
+  dev:
+    subnet: 192.168.2.0/24
+    network: Dev
+node:
+  prefixes:
+    master: kubem
+    worker: kubew
+  ip:
+    offsets:
+      master: 20
+      worker: 40
+vm:
+  sizes:
+    XS:
+      cpu: 1
+      cores: 1
+      mem: 2048
+    S:
+      cpu: 1
+      cores: 2
+      mem: 4096
+    M:
+      cpu: 2
+      cores: 2
+      mem: 8096
+    L:
+      cpu: 2
+      cores: 4
+      mem: 16192
+    XL:
+      cpu: 4
+      cores: 4
+      mem: 32384
