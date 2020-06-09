@@ -1,11 +1,23 @@
+import pulumi
 import pulumi_vsphere as vsphere
-import glab
-import ipaddress
-import hvac
 import base64
-import os
-from jinja2 import Template
+import cluster
+from enum import Enum
 from typing import Any, Dict, List
+from jinja2 import Template
+
+
+def _build_disks(template: vsphere.VirtualMachine) -> List[Dict[str, Any]]:
+    i = 0
+    disks = []
+    for disk in template.disks:
+        disks.append({'label': 'disk{}'.format(i),
+                      'size': int(float(str(disk['size']))) + 1,  # Have to add 1 to account for rounding errors
+                      'unitNumber': i,
+                      'thinProvisioned': bool(disk['thinProvisioned']),
+                      'eagerlyScrub': bool(disk['eagerlyScrub'])})
+        i += 1
+    return disks
 
 
 def _render_cloud_init(path: str, **kwargs) -> str:
@@ -14,82 +26,84 @@ def _render_cloud_init(path: str, **kwargs) -> str:
     return base64.b64encode(rendered.encode('utf-8')).decode('utf-8')
 
 
-class KubeNode:
+class NodeType(Enum):
+    MASTER = 1
+    WORKER = 2
 
-    def __init__(self, lab: glab.GLab,
-                 index: int,
-                 node_type: glab.NodeType,
-                 vm_size: glab.VMSize,
-                 env: glab.EnvType,
-                 pool: str,
-                 datastore: str,
-                 template: vsphere.VirtualMachine):
-        self.lab = lab
-        # Set name
-        num = '0{}'.format(index) if index < 10 else str(index)
-        self.name = lab.config['node']['prefixes'][node_type.value] + num
 
-        # Set pool
-        self.pool = pool
+class IPConfig:
+    def __init__(self, ip_address: str, gateway: str, dns_servers: List[str], domains: List[str]):
+        self.ip_address = ip_address
+        self.gateway = gateway
+        self.dns_servers = dns_servers
+        self.domains = domains
 
-        # Set resources
-        self.cpus = lab.config['vm']['sizes'][vm_size.value]['cpu']
-        self.cores = lab.config['vm']['sizes'][vm_size.value]['cores']
-        self.memory = lab.config['vm']['sizes'][vm_size.value]['mem']
+    @classmethod
+    def from_environment(cls, index: int, node_type: NodeType, env: cluster.Environment):
+        if node_type == NodeType.MASTER:
+            address = (env.network.subnet.network_address + env.master_config.network_offset + index)
+        else:
+            address = (env.network.subnet.network_address + env.worker_config.network_offset + index)
+        return IPConfig(
+            ip_address=str(address),
+            gateway=str(env.network.subnet.network_address + 1),
+            dns_servers=env.network.dns_servers,
+            domains=env.network.domains
+        )
 
-        # Set datastore
-        self.datastore = datastore
 
-        # Set network
-        self.network = lab.config['env'][env.value]['network']
+class NodeProperties:
+    def __init__(self, index: int,
+                 node_type: NodeType,
+                 resource_pool: cluster.ResourcePool,
+                 vault_token: str,
+                 env: cluster.Environment):
+        self.index = index
+        self.node_type = node_type
+        self.ip_config = IPConfig.from_environment(index, node_type, env)
+        self.resource_pool = resource_pool
+        self.vault_token = vault_token
+        self.env = env
 
-        # Set IP address
-        ip = ipaddress.ip_network(lab.config['env'][env.value]['subnet'])
-        self.ip = str(ip.network_address + lab.config['node']['ip']['offsets'][node_type.value] + index)
 
-        # Set template
-        self.template = template
+class Node(pulumi.ComponentResource):
+    def __init__(self, props: NodeProperties, opts = None):
+        if props.node_type == NodeType.MASTER:
+            config = props.env.master_config
+        else:
+            config = props.env.worker_config
+        name = config.name.format(num=props.index if props.index > 9 else '0' + str(props.index))
+        super().__init__('glab:deploy:node', name, None, opts)
 
-        # Generate token
-        client = hvac.Client()
-        self.token = client.create_token(policies=['ssh-signer'], lease='25m')['auth']['client_token']
-
-    def _build_disks(self) -> List[Dict[str, Any]]:
-        i = 0
-        disks = []
-        for disk in self.template.disks:
-            disks.append({'label': 'disk{}'.format(i),
-                          'size': int(float(str(disk['size']))) + 1,  # Have to add 1 to account for rounding errors
-                          'unitNumber': i,
-                          'thinProvisioned': bool(disk['thinProvisioned']),
-                          'eagerlyScrub': bool(disk['eagerlyScrub'])})
-            i += 1
-        return disks
-
-    def build(self) -> vsphere.VirtualMachine:
         metadata = _render_cloud_init('files/metadata.yml.j2',
-                                      hostname=self.name)
+                                      ip_address=props.ip_config.ip_address,
+                                      gateway=props.ip_config.gateway,
+                                      dns_servers=props.ip_config.dns_servers,
+                                      domains=props.ip_config.domains)
         userdata = _render_cloud_init('files/init.sh.j2',
-                                      vault_address=os.environ['VAULT_ADDR'],
-                                      vault_token=self.token)
-        return vsphere.VirtualMachine(resource_name=self.name,
-                                      name=self.name,
-                                      resource_pool_id=self.pool,
-                                      num_cpus=self.cpus,
-                                      num_cores_per_socket=self.cores,
-                                      memory=self.memory,
-                                      guest_id=self.template.guest_id,
-                                      datastore_id=self.datastore,
-                                      disks=self._build_disks(),
-                                      network_interfaces=[{
-                                          'networkId': self.lab.networks[self.network].id
-                                      }],
-                                      clone={
-                                          'templateUuid': self.template.id
-                                      },
-                                      extra_config={
-                                          'guestinfo.metadata': metadata,
-                                          'guestinfo.metadata.encoding': 'base64',
-                                          'guestinfo.userdata': userdata,
-                                          'guestinfo.userdata.encoding': 'base64',
-                                      })
+                                      vault_address=props.env.vault_address,
+                                      vault_token=props.vault_token)
+        self.vm = vsphere.VirtualMachine(
+            opts=pulumi.ResourceOptions(parent=self),
+            name=name,
+            resource_name=name,
+            resource_pool_id=props.resource_pool.id,
+            num_cpus=config.cpus,
+            memory=config.memory,
+            datastore_id=props.resource_pool.datastore_id,
+            guest_id=props.env.node_template.guest_id,
+            disks=_build_disks(props.env.node_template),
+            clone={
+                'templateUuid': props.env.node_template.id
+            },
+            network_interfaces=[{
+                'networkId': props.env.network.id
+            }],
+            extra_config={
+                'guestinfo.metadata': metadata,
+                'guestinfo.metadata.encoding': 'base64',
+                'guestinfo.userdata': userdata,
+                'guestinfo.userdata.encoding': 'base64',
+            }
+        )
+

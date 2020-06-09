@@ -2,8 +2,8 @@
 export VAULT_ADDR="{{ vault_address }}"
 export VAULT_TOKEN="{{ vault_token }}"
 
+# Generate and sign SSH host keys
 types=(rsa dsa ecdsa ed25519)
-
 rm /etc/ssh/ssh_host*
 ssh-keygen -A
 for t in ${types[@]}; do
@@ -11,3 +11,7 @@ for t in ${types[@]}; do
     signed_key="$(vault write -field=signed_key /ssh-host/sign/lab cert_type=host public_key="$pub_key")"
     echo $signed_key > "/etc/ssh/ssh_host_${t}_key-cert.pub"
 done
+
+# Apply network settings
+rm /etc/netplan/01-netcfg.yaml
+netplan apply

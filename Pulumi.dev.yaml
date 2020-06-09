@@ -1,0 +1,24 @@
+config:
+  glab:env:
+    datacenter: Gilman
+    name: dev
+    network:
+      domains:
+        - gilman.io
+      dns_servers:
+        - 192.168.2.1
+      name: Dev
+      subnet: 192.168.2.0/24
+    node:
+      master:
+        name: nodem{num}-dev
+        network_offset: 20
+        cpus: 2
+        memory: 4096
+      worker:
+        name: nodew{num}-dev
+        network_offset: 40
+        cpus: 4
+        memory: 8096
+    template: kube
+    vault_address: http://vault.gilman.io:8200

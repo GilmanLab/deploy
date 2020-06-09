@@ -5,4 +5,16 @@ network:
     nics:
       match:
         name: ens*
-      dhcp4: yes
+      dhcp4: false
+      addresses:
+        - {{ ip_address }}/24
+      gateway4: {{ gateway }}
+      nameservers:
+        search:
+          {% for domain in domains %}
+          - {{ domain.value }}
+          {% endfor %}
+        addresses:
+          {% for server in dns_servers %}
+          - {{ server.value }}
+          {% endfor %}
