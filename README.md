@@ -29,20 +29,15 @@ Configure the stack using the `Pulumi.<stack name>.yaml` file. It's recommended 
 and then make the necessary tweaks. Once the stack is configured a new cluster can be created with:
 
 ```bash
-./up.sh
+./up.sh <stack name>
 ```
 
 ### Using an existing stack
 
-Choose the stack you want to deploy:
+Simply specify the stack you want to bring up:
 
 ```bash
-$> pulumi stack select <stack name>
-```
-
-Create the cluster:
-```bash
-./up.sh
+./up.sh <stack name>
 ```
 
 ## Stack Outputs
