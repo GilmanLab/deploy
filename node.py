@@ -146,7 +146,8 @@ class Node(pulumi.ComponentResource):
             config = props.env.master_config
         else:
             config = props.env.worker_config
-        name = config.name.format(num=props.index if props.index > 9 else '0' + str(props.index))
+        index_str = props.index if props.index > 9 else '0' + str(props.index)
+        name = config.name.format(index=index_str, env=props.env.name)
         super().__init__('glab:deploy:node', "node-" + name, None, opts)
 
         metadata = _render_cloud_init('files/metadata.yml.j2',

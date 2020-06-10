@@ -16,12 +16,12 @@ config:
     name: dev
     node:
       master:
-        name: kubem{num}-dev
+        name: kubem{index}-{env}
         network_offset: 20
         cpus: 2
         memory: 4096
       worker:
-        name: kubew{num}-dev
+        name: kubew{index}-{env}
         network_offset: 40
         cpus: 4
         memory: 8096

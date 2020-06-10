@@ -75,9 +75,10 @@ class Cluster(pulumi.ComponentResource):
 
         # Distribute the worker nodes across the resource pools
         self.add_nodes(node.NodeType.WORKER, worker_count)
-
-        self.masters = ['{}.{}'.format(m.vm.name, props.env.domain) for m in self.nodes[node.NodeType.MASTER]]
-        self.workers = ['{}.{}'.format(w.vm.name, props.env.domain) for w in self.nodes[node.NodeType.WORKER]]
+        self.masters = ['{}.{}'.format(m.vm._name.replace("vm-", ""), props.env.domain) for m in
+                        self.nodes[node.NodeType.MASTER]]
+        self.workers = ['{}.{}'.format(w.vm._name.replace("vm-", ""), props.env.domain) for w in
+                        self.nodes[node.NodeType.WORKER]]
         self.register_outputs({
             "name": self.name,
             "nodes": self.node_count,

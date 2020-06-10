@@ -27,3 +27,7 @@ pulumi.export("cluster", {
     "masters": c.masters,
     "workers": c.workers,
 })
+
+pulumi.export("environment", {
+    "name": env.name
+})

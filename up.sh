@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 echo "Bringing up cluster..."
-pulumi up -y
+#pulumi up -y
 
 echo "Pulling down kubespray..."
 rm -rf /tmp/kubespray &> /dev/null
@@ -21,6 +21,9 @@ echo "Configuring cluster..."
 ansible-playbook -i /tmp/kubespray/inventory/glab/inventory.ini --become --become-user=root /tmp/kubespray/cluster.yml
 
 echo "Pulling down kube config..."
-ssh -t josh@kubem01-dev.gilman.io "sudo cat /etc/kubernetes/admin.conf" > ~/.kube/custom-contexts/glab.dev/config.yml
+env_name=$(pulumi stack output environment | jq -r .name)
+master=$(pulumi stack output cluster | jq -r .masters[0])
+mkdir -p ~/.kube/custom-contexts/${name}
+ssh -t josh@${master} "sudo cat /etc/kubernetes/admin.conf" > ~/.kube/custom-contexts/${name}/config.yml
 
 echo "Done!"

@@ -72,33 +72,35 @@ cluster is going to be created as well as the specifications of the cluster like
 The best method for configuring a new stack is to copy the `Pulumi.<stack name>.yaml` file contents to the new stack
 and then make the necessary modifications. Each possible configuration parameter is described below:
 
-* glab:cluster
-  * masters: The number of masters to create for the cluster (counts against node total)
-  * name: The name of the cluster (used to name the actual cluster configured by Kubespray)
-  * nodes: The number of nodes to create for this cluster (minimum number is 3)
-* glab:env
-  * datacenter: The name of the vSphere datacenter where the cluster will be deployed
-  * domain: The domain name used to generate hostnames for the Ansible inventory file
-  * network
-    * domains: A list of default search domains used to configure a node's network interface
-    * dns_servers: A list of DNS servers used to configure a node's network interface
-    * name: The name of the vSphere network/port group which will be assigned to a node's NIC
-    * subnet: The subnet to use when generating static IP addresses for nodes
-  * name: The name of this environment
-  * node
-    * master
-      * name: The format string which will be used to name master nodes
-      * network_offset: The offset applied when generating static IP addresses (i.e. if subnet is 192.168.1.0 and offset is 20, the first master node will have a static IP address of 192.168.1.21)
-      * cpus: The number of CPUs to assign to master nodes
-      * memory: The amount of memory (in MB) to assign to master nodes
-    * worker: same as above except targeted at worker nodes
-  * pools: A list of resource pools which nodes will be deployed against
-    * type: The type of resource pool, either *host* or *cluster*
-    * name: The name of the cluster or host as defined in vSphere
-    * datastore: The datastore that will be used for nodes deployed in this resource group
-    * weight: The weight which determines how nodes are distributed. Higher weights result in the pool having more nodes deployed against it.
-  * template: The name of the VM template which will be cloned when creating nodes
-  * vault_address: The address to a Vault server which will be used when nodes sign their SSH host keys on boot via cloud-init
+* `glab:cluster`
+  * `masters`: The number of masters to create for the cluster (counts against node total)
+  * `name`: The name of the cluster (used to name the actual cluster configured by Kubespray)
+  * `nodes`: The number of nodes to create for this cluster (minimum number is 3)
+* `glab:env`
+  * `datacenter`: The name of the vSphere datacenter where the cluster will be deployed
+  * `domain`: The domain name used to generate hostnames for the Ansible inventory file
+  * `network`
+    * `domains`: A list of default search domains used to configure a node's network interface
+    * `dns_servers`: A list of DNS servers used to configure a node's network interface
+    * `name`: The name of the vSphere network/port group which will be assigned to a node's NIC
+    * `subnet`: The subnet to use when generating static IP addresses for nodes
+  * `name`: The name of this environment
+  * `node`
+    * `master`
+      * `name`: The format string which will be used to name master nodes (ex. `master{index}-{env}`)
+        * `index`: The index of the node (i.e. `01`)
+        * `env`: The name of the environment
+      * `network_offset`: The offset applied when generating static IP addresses (i.e. if subnet is 192.168.1.0 and offset is 20, the first master node will have a static IP address of 192.168.1.21)
+      * `cpus`: The number of CPUs to assign to master nodes
+      * `memory`: The amount of memory (in MB) to assign to master nodes
+    * `worker`: same as above except targeted at worker nodes
+  * `pools`: A list of resource pools which nodes will be deployed against
+    * `type`: The type of resource pool, either *host* or *cluster*
+    * `name`: The name of the cluster or host as defined in vSphere
+    * `datastore`: The datastore that will be used for nodes deployed in this resource group
+    * `weight`: The weight which determines how nodes are distributed. Higher weights result in the pool having more nodes deployed against it.
+  * `template`: The name of the VM template which will be cloned when creating nodes
+  * `vault_address`: The address to a Vault server which will be used when nodes sign their SSH host keys on boot via cloud-init
   
 ## Cluster Creation
 
