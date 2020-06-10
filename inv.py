@@ -1,6 +1,9 @@
-from jinja2 import Template
-import sys
+"""A small helper script for generating an Ansible inventory file based on the Pulumi stack outputs"""
+
 import json
+import sys
+
+from jinja2 import Template
 
 j = json.loads(sys.stdin.read())
 

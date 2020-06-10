@@ -1,10 +1,8 @@
+"""The main Pulumi file which creates a cluster based on the stack configuration values."""
+import pulumi
+
 import cluster
 import environment
-import ipaddress
-import node
-import pulumi
-import pulumi_vsphere as vsphere
-
 
 config = pulumi.Config()
 env_config = config.require_object('env')
