@@ -40,6 +40,16 @@ Simply specify the stack you want to bring up:
 ./up.sh <stack name>
 ```
 
+### Environment
+
+Running this deployment process requires a few environment variables to be defined:
+
+* `VAULT_ADDR`: The URL to the Vault server
+* `VAULT_TOKEN`: A token with sufficient privileges to create tokens for signing SSH host keys
+* `VSPHERE_SERVER`: URL for the vCenter server
+* `VSPHERE_USER`: Username to a vSphere user with permissions to create virtual machines
+* `VSPHERE_PASSWORD`: Password for the above vSphere account
+
 ## Stack Outputs
 
 When a cluster is turned up for a stack it generates output data which is later used for configuring the cluster using
