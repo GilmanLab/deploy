@@ -4,6 +4,7 @@ echo "Bringing up cluster..."
 pulumi up -y
 
 echo "Pulling down kubespray..."
+rm -rf /tmp/kubespray &> /dev/null
 git clone https://github.com/kubernetes-sigs/kubespray /tmp/kubespray
 
 echo "Cloning inventory..."
