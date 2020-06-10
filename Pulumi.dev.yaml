@@ -1,7 +1,11 @@
 config:
+  glab:cluster:
+    masters: 1
+    name: glab.dev
+    nodes: 3
   glab:env:
     datacenter: Gilman
-    name: dev
+    domain: gilman.io
     network:
       domains:
         - gilman.io
@@ -9,16 +13,26 @@ config:
         - 192.168.2.1
       name: Dev
       subnet: 192.168.2.0/24
+    name: dev
     node:
       master:
-        name: nodem{num}-dev
+        name: kubem{num}-dev
         network_offset: 20
         cpus: 2
         memory: 4096
       worker:
-        name: nodew{num}-dev
+        name: kubew{num}-dev
         network_offset: 40
         cpus: 4
         memory: 8096
+    pools:
+      - type: cluster
+        name: Lab
+        datastore: vsan
+        weight: 1
+      - type: host
+        name: esxi0.gilman.io
+        datastore: Optane
+        weight: 2
     template: kube
     vault_address: http://vault.gilman.io:8200

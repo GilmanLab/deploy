@@ -1,7 +1,7 @@
 import pulumi
 import pulumi_vsphere as vsphere
 import base64
-import cluster
+import environment
 from enum import Enum
 from typing import Any, Dict, List
 from jinja2 import Template
@@ -39,7 +39,7 @@ class IPConfig:
         self.domains = domains
 
     @classmethod
-    def from_environment(cls, index: int, node_type: NodeType, env: cluster.Environment):
+    def from_environment(cls, index: int, node_type: NodeType, env: environment.Environment):
         if node_type == NodeType.MASTER:
             address = (env.network.subnet.network_address + env.master_config.network_offset + index)
         else:
@@ -55,9 +55,9 @@ class IPConfig:
 class NodeProperties:
     def __init__(self, index: int,
                  node_type: NodeType,
-                 resource_pool: cluster.ResourcePool,
+                 resource_pool: environment.ResourcePool,
                  vault_token: str,
-                 env: cluster.Environment):
+                 env: environment.Environment):
         self.index = index
         self.node_type = node_type
         self.ip_config = IPConfig.from_environment(index, node_type, env)
@@ -67,15 +67,16 @@ class NodeProperties:
 
 
 class Node(pulumi.ComponentResource):
-    def __init__(self, props: NodeProperties, opts = None):
+    def __init__(self, props: NodeProperties, opts=None):
         if props.node_type == NodeType.MASTER:
             config = props.env.master_config
         else:
             config = props.env.worker_config
         name = config.name.format(num=props.index if props.index > 9 else '0' + str(props.index))
-        super().__init__('glab:deploy:node', name, None, opts)
+        super().__init__('glab:deploy:node', "node-" + name, None, opts)
 
         metadata = _render_cloud_init('files/metadata.yml.j2',
+                                      hostname=name,
                                       ip_address=props.ip_config.ip_address,
                                       gateway=props.ip_config.gateway,
                                       dns_servers=props.ip_config.dns_servers,
@@ -83,10 +84,11 @@ class Node(pulumi.ComponentResource):
         userdata = _render_cloud_init('files/init.sh.j2',
                                       vault_address=props.env.vault_address,
                                       vault_token=props.vault_token)
+
         self.vm = vsphere.VirtualMachine(
             opts=pulumi.ResourceOptions(parent=self),
             name=name,
-            resource_name=name,
+            resource_name="vm-" + name,
             resource_pool_id=props.resource_pool.id,
             num_cpus=config.cpus,
             memory=config.memory,
@@ -106,4 +108,10 @@ class Node(pulumi.ComponentResource):
                 'guestinfo.userdata.encoding': 'base64',
             }
         )
+
+        self.register_outputs({
+            "hostname": name,
+            "ip_address": props.ip_config.ip_address,
+            "type": "master" if props.node_type == NodeType.MASTER else "worker",
+        })
 

@@ -1,0 +1,22 @@
+[all]
+{% for node in all %}{{ node }}
+{% endfor %}
+
+[kube-master]
+{% for master in masters %}{{ master }}
+{% endfor %}
+
+[kube-node]
+{% for worker in workers %}{{ worker }}
+{% endfor %}
+
+[etcd]
+{% for node in etcd_nodes %}{{ node }}
+{% endfor %}
+
+[calico-rr]
+
+[k8s-cluster:children]
+kube-master
+kube-node
+calico-rr

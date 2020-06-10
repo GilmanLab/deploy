@@ -12,9 +12,9 @@ network:
       nameservers:
         search:
           {% for domain in domains %}
-          - {{ domain.value }}
+          - {{ domain }}
           {% endfor %}
         addresses:
           {% for server in dns_servers %}
-          - {{ server.value }}
+          - {{ server }}
           {% endfor %}
