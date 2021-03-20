@@ -6,7 +6,7 @@ dill==0.3.1.1
 grpcio==1.29.0
 hvac==0.10.3
 idna==2.9
-Jinja2==2.11.2
+Jinja2==2.11.3
 MarkupSafe==1.1.1
 parver==0.3.0
 protobuf==3.12.2
