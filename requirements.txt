@@ -9,7 +9,7 @@ idna==2.9
 Jinja2==2.11.2
 MarkupSafe==1.1.1
 parver==0.3.0
-protobuf==3.12.2
+protobuf==3.18.3
 pulumi==2.3.0
 pulumi-vsphere==2.3.4
 PyYAML==5.3.1
